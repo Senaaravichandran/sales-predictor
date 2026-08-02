@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react'
-import { Activity, BarChart3, TrendingUp, TrendingDown, Database, Cpu } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Activity, BarChart3, TrendingUp, TrendingDown, Database, Cpu, UploadCloud } from 'lucide-react'
 import axios from 'axios'
 import './App.css'
 
 function App() {
   const [apiStatus, setApiStatus] = useState('Connecting...')
   const [isLoading, setIsLoading] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
+  const [datasetStats, setDatasetStats] = useState(null)
+  
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -26,6 +30,39 @@ function App() {
     fetchStatus()
   }, [])
 
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      if (response.data.status === 'success') {
+        setDatasetStats(response.data.data_summary);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("Failed to upload dataset. Please ensure the backend is running.");
+    } finally {
+      setIsUploading(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   return (
     <div className="app-container">
       <header className="header glass-panel animate-fade-in delay-1">
@@ -44,7 +81,16 @@ function App() {
               {apiStatus}
             </span>
           </span>
-          <button className="btn-primary">Generate Report</button>
+          <button className="btn-primary" onClick={triggerFileInput}>
+             {isUploading ? 'Uploading...' : 'Connect Dataset'}
+          </button>
+          <input 
+            type="file" 
+            accept=".csv" 
+            ref={fileInputRef} 
+            style={{ display: 'none' }} 
+            onChange={handleFileUpload} 
+          />
         </div>
       </header>
 
@@ -54,7 +100,7 @@ function App() {
             <TrendingUp size={20} color="var(--accent-1)" />
             Total Predicted Sales
           </div>
-          <div className="stat-value">2.4M</div>
+          <div className="stat-value">{datasetStats ? 'Processing...' : '2.4M'}</div>
           <div className="stat-trend trend-up">
             <TrendingUp size={16} /> +14.5% from last month
           </div>
@@ -65,9 +111,9 @@ function App() {
             <Database size={20} color="var(--accent-2)" />
             Data Points Analyzed
           </div>
-          <div className="stat-value">1.8M</div>
+          <div className="stat-value">{datasetStats ? datasetStats.total_rows.toLocaleString() : '1.8M'}</div>
           <div className="stat-trend trend-up">
-            <TrendingUp size={16} /> +120k new records
+            <TrendingUp size={16} /> {datasetStats ? 'Newly loaded dataset' : '+120k new records'}
           </div>
         </div>
 
@@ -78,19 +124,35 @@ function App() {
           </div>
           <div className="stat-value">94.2%</div>
           <div className="stat-trend trend-up">
-            <TrendingUp size={16} /> +1.2% model improvement
+            <TrendingUp size={16} /> Ready for inference
           </div>
         </div>
 
         <div className="main-chart glass-panel animate-fade-in delay-3">
-          <div className="chart-placeholder">
-            <BarChart3 size={64} style={{ opacity: 0.5 }} />
-            <h3>Sales Prediction Visualization</h3>
-            <p>Connect your datasets to generate advanced ML insights.</p>
-            <button className="btn-primary" style={{ marginTop: '1rem', padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
-              Connect Dataset
-            </button>
-          </div>
+          {datasetStats ? (
+            <div style={{ textAlign: 'left', width: '100%' }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--accent-1)' }}>Dataset Loaded Successfully</h3>
+              <p><strong>Total Rows:</strong> {datasetStats.total_rows.toLocaleString()}</p>
+              <p><strong>Total Columns:</strong> {datasetStats.total_cols}</p>
+              <div style={{ marginTop: '1rem' }}>
+                <strong>Features:</strong>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  {datasetStats.columns.map((col, idx) => (
+                    <span key={idx} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.85rem' }}>{col}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="chart-placeholder">
+              <UploadCloud size={64} style={{ opacity: 0.5, color: 'var(--accent-1)' }} />
+              <h3>Sales Prediction Visualization</h3>
+              <p>Connect your CSV datasets to generate advanced ML insights.</p>
+              <button className="btn-primary" style={{ marginTop: '1rem', padding: '0.5rem 1rem', fontSize: '0.9rem' }} onClick={triggerFileInput}>
+                {isUploading ? 'Uploading...' : 'Connect Dataset'}
+              </button>
+            </div>
+          )}
         </div>
       </main>
 
