@@ -1,37 +1,114 @@
-.app-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+/* App layout */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  padding: 1.5rem;
+  z-index: 10;
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 1rem;
-}
-
-.logo {
+.sidebar-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: white;
+  margin-bottom: 3rem;
 }
 
 .logo-icon {
   color: var(--accent-1);
 }
 
-.dashboard-grid {
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.nav-item.active {
+  background: var(--accent-gradient);
+  color: white;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+}
+
+.sidebar-footer {
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Main Content Area */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.05) 0%, transparent 40%);
+}
+
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(10, 10, 15, 0.8);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: white;
+}
+
+.content-wrapper {
+  padding: 2.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Grid Layouts */
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
 }
 
@@ -46,56 +123,84 @@
   align-items: center;
   gap: 0.75rem;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
 }
 
 .stat-value {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 700;
   color: white;
 }
 
-.stat-trend {
+/* Data Table */
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
 }
 
-.trend-up {
-  color: #10b981;
+th {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.trend-down {
-  color: #ef4444;
+td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  color: #d1d5db;
 }
 
-.main-chart {
-  grid-column: 1 / -1;
-  min-height: 400px;
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge.numeric {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+}
+
+.badge.categorical {
+  background: rgba(236, 72, 153, 0.2);
+  color: #f472b6;
+}
+
+/* Form layout */
+.form-group {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.chart-placeholder {
+.form-group label {
   color: var(--text-muted);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.footer {
-  text-align: center;
-  padding: 2rem 0;
-  color: var(--text-muted);
+  font-weight: 500;
   font-size: 0.9rem;
-  border-top: 1px solid var(--border-color);
-  margin-top: 2rem;
 }
