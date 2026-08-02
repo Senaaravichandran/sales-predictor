@@ -92,3 +92,8 @@ This project is licensed under the MIT License.
 <div align="center">
   <p>Built with ❤️ by Senaaravichandran</p>
 </div>
+
+## Technologies Used
+- React & Vite
+- FastAPI
+- Scikit-learn & XGBoost
