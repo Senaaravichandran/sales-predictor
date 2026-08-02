@@ -36,7 +36,26 @@ async def upload_dataset(file: UploadFile = File(...)):
         total_cols = len(df.columns)
         columns = df.columns.tolist()
         
-        # A simple response payload mimicking model insights
+        # Extract time series data if Date and Daily_Sales_Quantity exist
+        chart_data = []
+        total_sales = 0
+        if "Date" in df.columns and "Daily_Sales_Quantity" in df.columns:
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+            df = df.dropna(subset=["Date"])
+            # Group by date and sum
+            daily_sales = df.groupby(df["Date"].dt.date)["Daily_Sales_Quantity"].sum().reset_index()
+            daily_sales = daily_sales.sort_values("Date")
+            
+            # Format for frontend (e.g., take last 30 days for better visualization)
+            recent_sales = daily_sales.tail(30)
+            for _, row in recent_sales.iterrows():
+                chart_data.append({
+                    "date": str(row["Date"]),
+                    "sales": float(row["Daily_Sales_Quantity"])
+                })
+            
+            total_sales = float(df["Daily_Sales_Quantity"].sum())
+        
         return {
             "status": "success",
             "filename": file.filename,
@@ -44,6 +63,8 @@ async def upload_dataset(file: UploadFile = File(...)):
                 "total_rows": total_rows,
                 "total_cols": total_cols,
                 "columns": columns,
+                "total_sales": total_sales,
+                "chart_data": chart_data,
                 "preview": df.head(5).to_dict(orient="records")
             }
         }

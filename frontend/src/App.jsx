@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Activity, BarChart3, TrendingUp, TrendingDown, Database, Cpu, UploadCloud } from 'lucide-react'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import axios from 'axios'
 import './App.css'
 
@@ -63,6 +64,13 @@ function App() {
     }
   };
 
+  // Format large numbers
+  const formatNumber = (num) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toLocaleString();
+  };
+
   return (
     <div className="app-container">
       <header className="header glass-panel animate-fade-in delay-1">
@@ -81,7 +89,7 @@ function App() {
               {apiStatus}
             </span>
           </span>
-          <button className="btn-primary" onClick={triggerFileInput}>
+          <button className="btn-primary" onClick={triggerFileInput} disabled={isUploading}>
              {isUploading ? 'Uploading...' : 'Connect Dataset'}
           </button>
           <input 
@@ -100,9 +108,13 @@ function App() {
             <TrendingUp size={20} color="var(--accent-1)" />
             Total Predicted Sales
           </div>
-          <div className="stat-value">{datasetStats ? 'Processing...' : '2.4M'}</div>
+          <div className="stat-value">
+            {datasetStats 
+              ? (datasetStats.total_sales ? formatNumber(datasetStats.total_sales) : 'N/A') 
+              : 'Waiting for data...'}
+          </div>
           <div className="stat-trend trend-up">
-            <TrendingUp size={16} /> +14.5% from last month
+            <TrendingUp size={16} /> Based on dataset
           </div>
         </div>
 
@@ -111,9 +123,11 @@ function App() {
             <Database size={20} color="var(--accent-2)" />
             Data Points Analyzed
           </div>
-          <div className="stat-value">{datasetStats ? datasetStats.total_rows.toLocaleString() : '1.8M'}</div>
+          <div className="stat-value">
+            {datasetStats ? datasetStats.total_rows.toLocaleString() : 'Waiting for data...'}
+          </div>
           <div className="stat-trend trend-up">
-            <TrendingUp size={16} /> {datasetStats ? 'Newly loaded dataset' : '+120k new records'}
+            <TrendingUp size={16} /> Rows in CSV
           </div>
         </div>
 
@@ -128,23 +142,54 @@ function App() {
           </div>
         </div>
 
-        <div className="main-chart glass-panel animate-fade-in delay-3">
+        <div className="main-chart glass-panel animate-fade-in delay-3" style={{ gridColumn: '1 / -1', height: '500px', display: 'flex', flexDirection: 'column' }}>
           {datasetStats ? (
-            <div style={{ textAlign: 'left', width: '100%' }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--accent-1)' }}>Dataset Loaded Successfully</h3>
-              <p><strong>Total Rows:</strong> {datasetStats.total_rows.toLocaleString()}</p>
-              <p><strong>Total Columns:</strong> {datasetStats.total_cols}</p>
-              <div style={{ marginTop: '1rem' }}>
-                <strong>Features:</strong>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div>
+                  <h3 style={{ color: 'var(--accent-1)', fontSize: '1.4rem' }}>Sales Prediction Visualization</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Recent Daily Sales (Quantity)</p>
+                </div>
+              </div>
+              
+              {datasetStats.chart_data && datasetStats.chart_data.length > 0 ? (
+                <div style={{ flex: 1, width: '100%', minHeight: '300px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={datasetStats.chart_data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--accent-1)" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="var(--accent-1)" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => formatNumber(value)} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: 'rgba(20, 20, 30, 0.9)', borderColor: 'var(--border-color)', borderRadius: '8px' }}
+                        itemStyle={{ color: 'white' }}
+                      />
+                      <Area type="monotone" dataKey="sales" stroke="var(--accent-1)" fillOpacity={1} fill="url(#colorSales)" strokeWidth={3} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-muted)' }}>
+                  <p>No valid time-series data found (missing 'Date' or 'Daily_Sales_Quantity' columns).</p>
+                </div>
+              )}
+              
+              <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Dataset Features:</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                   {datasetStats.columns.map((col, idx) => (
-                    <span key={idx} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.85rem' }}>{col}</span>
+                    <span key={idx} style={{ background: 'rgba(255,255,255,0.05)', padding: '0.3rem 0.8rem', borderRadius: '4px', fontSize: '0.8rem', border: '1px solid rgba(255,255,255,0.1)' }}>{col}</span>
                   ))}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="chart-placeholder">
+            <div className="chart-placeholder" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
               <UploadCloud size={64} style={{ opacity: 0.5, color: 'var(--accent-1)' }} />
               <h3>Sales Prediction Visualization</h3>
               <p>Connect your CSV datasets to generate advanced ML insights.</p>
