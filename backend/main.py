@@ -117,6 +117,25 @@ async def train_model(request: TrainRequest):
         X = df.drop(columns=[request.target_column])
         
         # Basic Preprocessing
+        # 0. Extract Date Features
+        date_cols = []
+        for col in X.columns:
+            if X[col].dtype == 'object' or str(X[col].dtype) == 'category':
+                # naive check if it looks like a date
+                if X[col].astype(str).str.match(r'^\d{4}-\d{2}-\d{2}').any():
+                    date_cols.append(col)
+                    
+        for col in date_cols:
+            try:
+                X[col] = pd.to_datetime(X[col], errors='coerce')
+                X[f"{col}_Year"] = X[col].dt.year
+                X[f"{col}_Month"] = X[col].dt.month
+                X[f"{col}_Day"] = X[col].dt.day
+                X[f"{col}_DayOfWeek"] = X[col].dt.dayofweek
+                X.drop(columns=[col], inplace=True)
+            except Exception:
+                pass # If parsing fails, just leave it for categorical encoding
+
         # 1. Fill missing values
         numeric_cols = X.select_dtypes(include=[np.number]).columns
         categorical_cols = X.select_dtypes(exclude=[np.number]).columns
@@ -127,11 +146,18 @@ async def train_model(request: TrainRequest):
             X[col] = X[col].fillna(X[col].mode()[0] if not X[col].mode().empty else "Unknown")
             
         # 2. Encode categorical variables
+        # Use OneHotEncoding for low cardinality, LabelEncoding for high
         encoders = {}
         for col in categorical_cols:
-            le = LabelEncoder()
-            X[col] = le.fit_transform(X[col].astype(str))
-            encoders[col] = le
+            if X[col].nunique() < 10:
+                # One-hot encode
+                dummies = pd.get_dummies(X[col], prefix=col, drop_first=True)
+                X = pd.concat([X, dummies], axis=1)
+                X.drop(columns=[col], inplace=True)
+            else:
+                le = LabelEncoder()
+                X[col] = le.fit_transform(X[col].astype(str))
+                encoders[col] = le
             
         # Determine Task Type
         is_classification = False
